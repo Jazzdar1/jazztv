@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPTV Player with Breaking News and Social Media</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #f06, #ffcc00);
+        }
+        .container {
+            display: flex;
+            align-items: flex-start;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+            max-width: 1000px;
+            width: 100%;
+            height: 80%;
+            box-sizing: border-box;
+            position: relative;
+        }
+        #player-container {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            max-width: 70%;
+        }
+        #breaking-news {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            background-color: #ff4444;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+        #breaking-news marquee {
+            flex: 1;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        #social-icons {
+            display: flex;
+            gap: 15px;
+        }
+        #social-icons a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.5em;
+        }
+        /* Responsive media player styles */
+        #hls-player {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        /* Aspect ratio container for the video player */
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        .video-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            width: 100%;
+        }
+        #controls button,
+        #controls select,
+        #controls input {
+            margin: 5px;
+        }
+        #controls button {
+            padding: 10px 15px;
+            background: linear-gradient(45deg, #ff0077, #ffcc00);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s, transform 0.2s;
+        }
+        #controls button:hover {
+            background: linear-gradient(45deg, #ff0055, #ffcc00);
+            transform: scale(1.05);
+        }
+        #current-channel {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #current-channel img {
+            width: 100px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        #playlist-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            margin-left: 20px;
+            max-width: 30%;
+            box-sizing: border-box;
+        }
+        #channel-list {
+            width: 100%;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+        #channels {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .channel-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            flex-wrap: nowrap;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .channel-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .channel-item:hover {
+            background-color: #f0f0f0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #error-message {
+            color: red;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="player-container">
+            <!-- Breaking News & Social Media Section -->
+            <div id="breaking-news">
+                <marquee behavior="scroll" direction="left">Breaking News: Stay tuned for live updates on the latest events around the world!</marquee>
+                <div id="social-icons">
+                    <a href="https://www.facebook.com" target="_blank">??</a>
+                    <a href="https://www.twitter.com" target="_blank">??</a>
+                    <a href="https://www.instagram.com" target="_blank">??</a>
+                </div>
+            </div>
+            <div class="video-container">
+                <video id="hls-player" controls autoplay></video>
+            </div>
+            <div id="controls">
+                <button id="prev">Previous</button>
+                <button id="playPause">Pause</button>
+                <button id="next">Next</button>
+                <button id="rewind">Rewind 10s</button>
+                <button id="forward">Forward 10s</button>
+                <select id="quality" class="quality-select">
+                    <option value="auto">Auto</option>
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <input type="file" id="file-upload" class="file-upload" multiple />
+                <input type="text" id="playlist-input" class="playlist-input" placeholder="Enter playlist URL (M3U, M3U8, MPD)" />
+                <button id="load-playlist">Load Playlist</button>
+            </div>
+            <div id="current-channel">
+                <img id="channel-logo" src="https://via.placeholder.com/100x60.png?text=Logo" alt="Channel Logo">
+                <h2 id="channel-name">Channel Name</h2>
+            </div>
+        </div>
+        <div id="playlist-section">
+            <select id="playlist-dropdown" class="playlist-dropdown">
+                <option value="">Select Playlist</option>
+                <!-- Dropdown options will be added dynamically -->
+            </select>
+            <button id="add-playlist">Add Playlist</button>
+            <div id="channel-list">
+                <h1>TV Channels</h1>
+                <ul id="channels"></ul>
+            </div>
+        </div>
+    </div>
+    <div id="error-message"></div>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoPlayer = document.getElementById('hls-player');
+            const channelList = document.getElementById('channels');
+            const qualitySelect = document.getElementById('quality');
+            const channelLogo = document.getElementById('channel-logo');
+            const channelNameElement = document.getElementById('channel-name');
+            const fileUpload = document.getElementById('file-upload');
+            const playlistInput = document.getElementById('playlist-input');
+            const loadPlaylistButton = document.getElementById('load-playlist');
+            const addPlaylistButton = document.getElementById('add-playlist');
+            const playlistDropdown = document.getElementById('playlist-dropdown');
+            const errorMessage = document.getElementById('error-message');
+
+            let channelUrls = [];
+            let channelData = [];
+            let currentChannelIndex = 0;
+
+            const defaultM3UUrl = 'https://iptv-org.github.io/iptv/countries/in.m3u';
+
+            const predefinedPlaylists = [
+                { name: 'Pakistan Channels', url: 'https://iptv-org.github.io/iptv/countries/pk.m3u' },
+                { name: 'Country Index', url: 'https://iptv-org.github.io/iptv/index.country.m3u' },
+                { name: 'Afghanistan Channels', url: 'https://iptv-org.github.io/iptv/countries/af.m3u' },
+                { name: 'Albania Channels', url: 'https://iptv-org.github.io/iptv/countries/al.m3u' },
+                { name: 'Arabic Channels', url: 'https://iptv-org.github.io/iptv/languages/ara.m3u' },
+                { name: 'English Channels', url: 'https://iptv-org.github.io/iptv/languages/eng.m3u' },
+                { name: 'Hindi Channels', url: 'https://iptv-org.github.io/iptv/languages/hin.m3u' },
+                { name: 'Italian Channels', url: 'https://iptv-org.github.io/iptv/countries/it.m3u' },
+                { name: 'Turkish Channels', url: 'https://iptv-org.github.io/iptv/countries/tr.m3u' },
+                { name: 'TATA', url: 'https://raw.githubusercontent.com/FunctionError/PiratesTv/main/combined_playlist.m3u' },
+            ];
+
+            function showError(message) {
+                errorMessage.textContent = message;
+            }
+
+            function populatePlaylistDropdown() {
+                predefinedPlaylists.forEach(playlist => {
+                    const option = document.createElement('option');
+                    option.value = playlist.url;
+                    option.textContent = playlist.name;
+                    playlistDropdown.appendChild(option);
+                });
+            }
+
+            function handleFileUpload(files) {
+                if (files.length === 0) return;
+                const file = files[0];
+                if (file.type !== 'application/x-mpegurl' && file.type !== 'application/vnd.apple.mpegurl' && !file.name.endsWith('.m3u')) {
+                    showError('Unsupported file type. Please upload an M3U or M3U8 playlist.');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const playlistText = event.target.result;
+                    parsePlaylist(playlistText);
+                };
+                reader.readAsText(file);
+            }
+
+            function parsePlaylist(playlistText) {
+                channelUrls = [];
+                channelData = [];
+                const lines = playlistText.split('\n');
+                let currentName = '';
+                let currentLogo = '';
+
+                lines.forEach(line => {
+                    line = line.trim();
+                    if (line.startsWith('#EXTINF:')) {
+                        const extinfParts = line.split(',');
+                        currentName = extinfParts[1].trim();
+
+                        // Extract logo if available
+                        const logoMatch = line.match(/tvg-logo="(.*?)"/);
+                        if (logoMatch && logoMatch[1]) {
+                            currentLogo = logoMatch[1];
+                        } else {
+                            currentLogo = 'https://via.placeholder.com/100x60.png?text=No+Logo';
+                        }
+                    } else if (line.startsWith('http') || line.startsWith('https')) {
+                        const currentChannel = line;
+                        channelUrls.push(currentChannel);
+                        channelData.push({ url: currentChannel, name: currentName, logo: currentLogo });
+                    }
+                });
+
+                displayChannels();
+                if (channelUrls.length > 0) {
+                    playChannel(0);
+                } else {
+                    showError('No valid channels found in the playlist.');
+                }
+            }
+
+            function displayChannels() {
+                channelList.innerHTML = '';
+                channelData.forEach((channel, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'channel-item';
+                    li.dataset.index = index;
+
+                    const img = document.createElement('img');
+                    img.src = channel.logo;
+                    img.alt = 'Channel Logo';
+
+                    const span = document.createElement('span');
+                    span.textContent = channel.name;
+
+                    li.appendChild(img);
+                    li.appendChild(span);
+                    channelList.appendChild(li);
+                });
+            }
+
+            function playChannel(index) {
+                if (index < 0 || index >= channelUrls.length) return;
+                const channel = channelData[index];
+                const url = channel.url;
+
+                if (Hls.isSupported() || videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                    if (Hls.isSupported()) {
+                        const hls = new Hls();
+                        hls.loadSource(url);
+                        hls.attachMedia(videoPlayer);
+                        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                            videoPlayer.play();
+                        });
+                        hls.on(Hls.Events.ERROR, function (event, data) {
+                            if (data.fatal === Hls.ErrorTypes.NETWORK_ERROR) {
+                                showError('Network error: ' + data.details);
+                            } else if (data.fatal === Hls.ErrorTypes.MEDIA_ERROR) {
+                                showError('Media error: ' + data.details);
+                            } else if (data.fatal === Hls.ErrorTypes.OTHER_ERROR) {
+                                showError('Other error: ' + data.details);
+                            }
+                        });
+                    } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                        videoPlayer.src = url;
+                        videoPlayer.addEventListener('loadedmetadata', () => {
+                            videoPlayer.play();
+                        });
+                    } else {
+                        showError('Your browser does not support the media format.');
+                    }
+
+                    // Update current channel info
+                    channelLogo.src = channel.logo;
+                    channelNameElement.textContent = channel.name;
+
+                    currentChannelIndex = index;
+                    updatePlaybackControls();
+                } else {
+                    showError('Your browser does not support the media format.');
+                }
+            }
+
+            function updatePlaybackControls() {
+                const playPauseButton = document.getElementById('playPause');
+                playPauseButton.textContent = videoPlayer.paused ? 'Play' : 'Pause';
+                playPauseButton.onclick = () => {
+                    if (videoPlayer.paused) {
+                        videoPlayer.play();
+                    } else {
+                        videoPlayer.pause();
+                    }
+                };
+            }
+
+            document.getElementById('prev').onclick = () => {
+                playChannel(currentChannelIndex - 1);
+            };
+
+            document.getElementById('next').onclick = () => {
+                playChannel(currentChannelIndex + 1);
+            };
+
+            document.getElementById('rewind').onclick = () => {
+                videoPlayer.currentTime = Math.max(0, videoPlayer.currentTime - 10);
+            };
+
+            document.getElementById('forward').onclick = () => {
+                videoPlayer.currentTime += 10;
+            };
+
+            qualitySelect.onchange = () => {
+                // Placeholder for quality change functionality
+                console.log('Quality changed to:', qualitySelect.value);
+            };
+
+            fileUpload.addEventListener('change', function(event) {
+                handleFileUpload(event.target.files);
+            });
+
+            loadPlaylistButton.addEventListener('click', function() {
+                const url = playlistInput.value;
+                if (url) {
+                    fetchPlaylist(url);
+                } else {
+                    showError('Please enter a playlist URL.');
+                }
+            });
+
+            addPlaylistButton.addEventListener('click', function() {
+                const selectedUrl = playlistDropdown.value;
+                if (selectedUrl) {
+                    fetchPlaylist(selectedUrl);
+                } else {
+                    showError('Please select a playlist from the dropdown.');
+                }
+            });
+
+            channelList.addEventListener('click', function(event) {
+                const target = event.target;
+                if (target && target.closest('.channel-item')) {
+                    const item = target.closest('.channel-item');
+                    const index = item.dataset.index;
+                    playChannel(Number(index));
+                }
+            });
+
+            function fetchPlaylist(url) {
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.text();
+                    })
+                    .then(data => parsePlaylist(data))
+                    .catch(error => showError('Error fetching playlist: ' + error.message));
+            }
+
+            // Load default M3U playlist on page load
+            fetchPlaylist(defaultM3UUrl);
+
+            populatePlaylistDropdown();
+            updatePlaybackControls();
+        });
+    </script>
+</body>
+</html>
